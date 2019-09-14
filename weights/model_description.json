@@ -1,0 +1,14 @@
+{
+    "unet_cifar": {
+        "batch_size": 128,
+        "betas": [
+            0.9,
+            0.999
+        ],
+        "epochs": 20,
+        "image_loss_weight": 50,
+        "loss_name": "/content/drive/My Drive/Uni/6. Semester/Advanced Machine Learning/project/weights/unet_cifar_loss.txt",
+        "lr": 0.001,
+        "model": "unet"
+    }
+}
