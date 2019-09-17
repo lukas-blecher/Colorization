@@ -13,10 +13,14 @@ def load_trainset(data_path, lab=False, load_list=False,normalize=True):
     if 'cifar' in  data_path:
         trainset = datasets.CIFAR10(root=data_path, train=True,
                                         download=True, transform=transforms.ToTensor())
-        print('cifar loaded')
+
+    elif 'places-big' in data_path:
+        trainset = BigPlacesDataset(data_path,lab=lab,load_list=load_list,normalize=normalize)
+
     elif 'places' in data_path:
         trainset = PlacesDataset(data_path,lab=lab,load_list=load_list,normalize=normalize)
     return trainset
+
 class PlacesDataset(Dataset):
     def __init__(self, path, transform=True, lab=False, classification=False, load_list=True, normalize=True):
         self.path = path
@@ -63,6 +67,42 @@ class PlacesDataset(Dataset):
             image = torch.tensor(np.transpose(image, (2,0,1))).type(torch.FloatTensor)
         return image
 
+class BigPlacesDataset(Dataset):
+    def __init__(self, path, transform=True, train=True, lab=False, classification=False, load_list=True, normalize=True):
+        self.path = path
+        if train:
+            self.list_path = os.path.join(path, 'train.txt')
+        else:
+            self.list_path = os.path.join(path, 'val.txt')
+            
+        with open(self.list_path, 'r') as f:
+            self.file_list = [line.rstrip('\n') for line in f]
+        
+        self.transform = transform
+        self.lab = lab
+        self.bins = classification
+        self.norm = normalize
+        #need to use transforms.Normalize in future but currently broken
+        self.offset=-np.array([0,128,128])
+        self.range=np.array([100,255,255])
+    def __len__(self):
+        return len(self.file_list)
+    
+    def __getitem__(self, item):
+        img_name = os.path.join(self.path,
+                                self.file_list[item])
+        image = plt.imread(img_name)/255
+        if self.lab:
+            if self.norm:
+                image = (color.rgb2lab(image)-self.offset[None,None,:])/self.range[None,None,:]
+            else:
+                image = (color.rgb2lab(image)-np.array([50,0,0])[None,None,:])
+
+            if self.bins:
+                image[:,:,1:]=ab2bins(image[:,:,1:])
+        if self.transform:
+            image = torch.tensor(np.transpose(image, (2,0,1))).type(torch.FloatTensor)
+        return image
 
 
 #image preprocessing
