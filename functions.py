@@ -22,7 +22,7 @@ def load_trainset(data_path, lab=False, load_list=False,normalize=True):
     return trainset
 
 class PlacesDataset(Dataset):
-    def __init__(self, path, transform=True, lab=False, classification=False, load_list=True, normalize=True):
+    def __init__(self, path, transform=True, lab=False, load_list=True, normalize=True):
         self.path = path
         if load_list:          
             if path[-1] == "/":
@@ -42,8 +42,12 @@ class PlacesDataset(Dataset):
             self.file_list = sorted(list(set(os.listdir(path))))
         
         self.transform = transform
+        self.tf = transforms.Compose([transforms.ToPILImage(),
+                                              transforms.RandomCrop((224,224)),
+                                              transforms.ColorJitter(hue=.025, saturation=.15),
+                                              transforms.RandomHorizontalFlip(),
+                                              transforms.ToTensor()])
         self.lab = lab
-        self.bins = classification
         self.norm = normalize
         #need to use transforms.Normalize in future but currently broken
         self.offset=-np.array([0,128,128])
@@ -54,21 +58,20 @@ class PlacesDataset(Dataset):
     def __getitem__(self, item):
         img_name = os.path.join(self.path,
                                 self.file_list[item])
-        image = plt.imread(img_name)/255
+        image = plt.imread(img_name)
+        image = self.tf(image).numpy().transpose((1,2,0))
         if self.lab:
             if self.norm:
                 image = (color.rgb2lab(image)-self.offset[None,None,:])/self.range[None,None,:]
             else:
                 image = (color.rgb2lab(image)-np.array([50,0,0])[None,None,:])
 
-            if self.bins:
-                image[:,:,1:]=ab2bins(image[:,:,1:])
         if self.transform:
             image = torch.tensor(np.transpose(image, (2,0,1))).type(torch.FloatTensor)
         return image
 
 class BigPlacesDataset(Dataset):
-    def __init__(self, path, transform=True, train=True, lab=False, classification=False, load_list=True, normalize=True):
+    def __init__(self, path, transform=True, train=True, lab=False, load_list=True, normalize=True):
         self.path = path
         if train:
             self.list_path = os.path.join(path, 'train.txt')
@@ -79,10 +82,13 @@ class BigPlacesDataset(Dataset):
             self.file_list = [line.rstrip('\n') for line in f]
         
         self.transform = transform
+        self.tf = transforms.Compose([transforms.ToPILImage(),
+                                        transforms.RandomCrop((224,224)),
+                                        transforms.ColorJitter(hue=.025, saturation=.15),
+                                        transforms.RandomHorizontalFlip(),
+                                        transforms.ToTensor()])
         self.lab = lab
-        self.bins = classification
         self.norm = normalize
-        #need to use transforms.Normalize in future but currently broken
         self.offset=-np.array([0,128,128])
         self.range=np.array([100,255,255])
     def __len__(self):
@@ -91,15 +97,14 @@ class BigPlacesDataset(Dataset):
     def __getitem__(self, item):
         img_name = os.path.join(self.path,
                                 self.file_list[item])
-        image = plt.imread(img_name)/255
+        image = plt.imread(img_name)
+        image = self.tf(image).numpy().transpose((1,2,0))
         if self.lab:
             if self.norm:
                 image = (color.rgb2lab(image)-self.offset[None,None,:])/self.range[None,None,:]
             else:
                 image = (color.rgb2lab(image)-np.array([50,0,0])[None,None,:])
 
-            if self.bins:
-                image[:,:,1:]=ab2bins(image[:,:,1:])
         if self.transform:
             image = torch.tensor(np.transpose(image, (2,0,1))).type(torch.FloatTensor)
         return image
