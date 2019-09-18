@@ -6,6 +6,7 @@ import numpy as np
 from itertools import count
 import sys, getopt
 from models.discriminator import markov_critic
+from models.discriminator import markov_cifar_critic
 from models.model import model
 from models.unet import unet
 from settings import s
@@ -148,8 +149,12 @@ def main(argv):
         prev_epochs=params['epochs']+1
 
     
-    #define critic 
-    crit = markov_critic().to(device)
+    #define critic
+    if data_path == './cifar-10':
+        crit = markov_cifar_critic().to(device)
+    elif 'places' in data_path:
+        crit = markov_critic().to(device)
+    
     
     #load discriminator weights
     crit_path=weight_path+'/'+weights_name+'_crit.pth'
