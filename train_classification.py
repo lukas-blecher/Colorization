@@ -97,7 +97,7 @@ def main(argv):
         in_size = 32
         dataset = 0
     elif 'places' in data_path:
-        in_size = 256
+        in_size = 224
         dataset = 1
     in_shape=(3,in_size,in_size)
 
