@@ -67,11 +67,11 @@ class markov_cifar_critic(nn.Module):
     def __init__(self):
         super(markov_cifar_critic,self).__init__()
 
-        self.cnn = nn.Sequential(conv_block(4, 64, pad=1, kernel=2, stride=2, leaky=.2),
-                                conv_block(64, 128, pad=1, kernel=2, stride=2, leaky=.2, bn=True),
-                                conv_block(128, 256, pad=1, kernel=2, stride=1, leaky=.2, bn=True),
-                                conv_block(256, 512, pad=1, kernel=1, stride=1, leaky=.2, bn=True),
-                                nn.Conv2d(512, 1, kernel_size=1, stride=1, padding=1),
+        self.cnn = nn.Sequential(conv_block(4, 64, pad=1, kernel=4, stride=2, leaky=.2),
+                                conv_block(64, 128, pad=1, kernel=4, stride=2, leaky=.2, bn=True),
+                                conv_block(128, 256, pad=0, kernel=1, stride=1, leaky=.2, bn=True),
+                                conv_block(256, 512, pad=0, kernel=1, stride=1, leaky=.2, bn=True),
+                                nn.Conv2d(512, 1, kernel_size=1, stride=1, padding=0),
                                 nn.Sigmoid())
     def forward(self, x):
         return self.cnn(x)
