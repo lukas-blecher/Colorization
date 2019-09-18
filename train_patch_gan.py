@@ -75,7 +75,7 @@ def main(argv):
     if data_path == './cifar-10':
         in_size = 32
     elif 'places' in data_path:
-        in_size = 256
+        in_size = 224
     in_shape=(3,in_size,in_size)
 
     #out_shape=(s.classes,32,32)
