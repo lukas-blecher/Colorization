@@ -229,6 +229,7 @@ def main(argv):
             fake_crit = crit(torch.cat((X,unet_col.detach()),dim=1))
             fake_loss=criterion(fake_crit ,torch.zeros(fake_crit.shape).to(device))
             loss_c=.5*(real_loss+fake_loss)
+            loss_c = loss_c.mean()
             loss_c.backward()
             optimizer_c.step()
 
