@@ -240,7 +240,6 @@ def main(argv):
             #report running loss
             if (i+len(trainloader)*e)%report_freq==report_freq-1:
                 print('Epoch %i, batch %i: \tunet loss=%.2e, \tcritic loss=%.2e'%(e+1,i+1,g_running/report_freq,c_running/report_freq))
-                print(real_crit,fake_crit)
                 g_running=0
                 c_running=0
 
