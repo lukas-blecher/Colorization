@@ -20,11 +20,11 @@ def main(argv):
     data_path = s.data_path
     weight_path = s.weights_path
     mode=1
-    drop_rate=s.drop_rate
+    drop_rate=0
     lab=s.lab
-    classification=False
+    classification,small=False,False
     try:
-        opts, args = getopt.getopt(argv,"h:w:p:b:m:ld:c",["help", "weight-path=", "datapath=",'model=','lab','drop-rate='])
+        opts, args = getopt.getopt(argv,"h:w:p:b:m:ld:c",["help", "weight-path=", "datapath=",'model=','lab','drop-rate=','small'])
     except getopt.GetoptError as error:
         print(error)
         print( 'test.py -i <Boolean> -s <Boolean>')
@@ -56,6 +56,8 @@ def main(argv):
         elif opt =='-c':
             classification=True
             lab=True
+        elif opt=='--small':
+            small=True
     device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     dataset=None
@@ -72,7 +74,7 @@ def main(argv):
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=3,
                                         shuffle=True, num_workers=2)
     print("Loaded dataset from", data_path)
-    classes=(274 if classification else 2) if lab else 3
+    classes=((274 if not small else 42) if classification else 2) if lab else 3
 
     #define model
     UNet=None
