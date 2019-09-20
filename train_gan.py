@@ -177,10 +177,7 @@ def main(argv):
 
     
     #define critic 
-    if dataset == 0: #cifar 10
-        crit=critic(trainset.data.shape[1],classes=classes).to(device)
-    elif dataset == 1: #places
-        crit=critic(256,classes=classes).to(device)
+    crit=critic(in_size,classes=classes).to(device)
     #load discriminator weights
     crit_path=os.path.join(weight_path,weights_name+'_crit.pth')
     try:
