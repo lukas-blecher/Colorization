@@ -119,7 +119,7 @@ def main(argv):
  
     print("NETWORK PATH:", weight_path_ending)
     #define output channels of the model
-    classes = 274
+    classes = 150
     #define model
     if mode == 0:
         classifier = generator(drop_rate,classes)
@@ -191,13 +191,16 @@ def main(argv):
     #optimizer
     optimizer=optim.Adam(classifier.parameters(),lr=lr,betas=betas)
     weights=np.load('resources/class-weights.npy')
+    if dataset==0:
+        weights=torch.load('resources/cifar-lab-class-weights.pt').numpy()
+    weights=torch.load('resources/class-weights-lab150.pt').numpy()
     #criterion = nn.CrossEntropyLoss(weight=weights).to(device) if weighted_loss else nn.CrossEntropyLoss().to(device)
     criterion = softCossEntropyLoss(weights=weights,device=device) if weighted_loss else softCossEntropyLoss(weights=None,device=device)
     #additional gan loss: l1 loss
     #l1loss = nn.L1Loss().to(device)
     loss_hist=[]
     #soft_onehot = torch.load('resources/onehot.pt',map_location=device)
-    soft_onehot = torch.load('resources/smooth_onehot.pt',map_location=device)
+    soft_onehot = torch.load('resources/smooth_onehot150.pt',map_location=device)
     
     classifier.train()
     #crit.train()
