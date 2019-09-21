@@ -132,7 +132,7 @@ class STL(Dataset):
                                         transforms.RandomHorizontalFlip(),
                                         transforms.ToTensor()])
         self.lab = lab
-        self.offset=np.array([.5,0,0])
+        self.offset=np.array([50,0,0])
         self.range=np.array([1,1,1])
     def __len__(self):
         return len(self.data)
@@ -147,7 +147,7 @@ class STL(Dataset):
         image = self.data[item]
         image = self.tf(image).numpy().transpose((1,2,0))
         if self.lab:
-            image = (color.rgb2yuv(image)-np.array([.5,0,0])[None,None,:])
+            image = (color.rgb2yuv(image)-np.array([50,0,0])[None,None,:])
 
         if self.transform:
             image = torch.tensor(np.transpose(image, (2,0,1))).type(torch.FloatTensor)
