@@ -53,8 +53,8 @@ class PlacesDataset(Dataset):
         self.lab = lab
         self.norm = normalize
         #need to use transforms.Normalize in future but currently broken
-        self.offset=-np.array([0,128,128])
-        self.range=np.array([100,255,255])
+        self.offset=np.array([50,0,0])
+        self.range=np.array([1,1,1])
     def __len__(self):
         return len(self.file_list)
     
@@ -92,8 +92,8 @@ class BigPlacesDataset(Dataset):
                                         transforms.ToTensor()])
         self.lab = lab
         self.norm = normalize
-        self.offset=-np.array([0,128,128])
-        self.range=np.array([100,255,255])
+        self.offset=np.array([50,0,0])
+        self.range=np.array([1,1,1])
     def __len__(self):
         return len(self.file_list)
     
@@ -106,7 +106,7 @@ class BigPlacesDataset(Dataset):
             if self.norm:
                 image = (color.rgb2lab(image)-self.offset[None,None,:])/self.range[None,None,:]
             else:
-                image = (color.rgb2yuv(image)-np.array([.5,0,0])[None,None,:])
+                image = (color.rgb2yuv(image)-np.array([50,0,0])[None,None,:])
 
         if self.transform:
             image = torch.tensor(np.transpose(image, (2,0,1))).type(torch.FloatTensor)
