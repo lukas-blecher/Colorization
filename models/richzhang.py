@@ -42,7 +42,7 @@ class richzhang(nn.Module):
 
 
     def forward(self, x):
-        shape=x.shape
+        #shape=x.shape
         # contraction
         x = self.encoder(x)
         # expansion

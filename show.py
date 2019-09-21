@@ -4,14 +4,19 @@ import numpy as np
 #from unet.dataset import gta_dataset, city_dataset
 from settings import s
 #from unet.unet import unet
-from skimage.color import lab2rgb as lr
+from skimage.color import lab2rgb
 from skimage import exposure
 
-from functions import bins2lab
+from functions import bins2ab,ab2bins,ab_from_distr
 from scipy.ndimage.interpolation import zoom as scale
 
-#not really beautiful 
-def show_colorization(pred,truth=None,original=None,lab=False,cl=False,zoom=False):
+#avoid negative values
+def lr(img):
+    img=lab2rgb(img)
+    img=np.clip(img,0,1)
+    return img
+
+def show_colorization(pred,truth=None,original=None,lab=False,cl=False,zoom=False,T=1):
     N = 1
     if len(pred.shape)==4:
          N = pred.shape[0]
@@ -25,19 +30,19 @@ def show_colorization(pred,truth=None,original=None,lab=False,cl=False,zoom=Fals
                 pn=pred[i].detach().cpu().numpy()
                 tn=truth[i].detach().cpu().numpy()                
                 if cl:
-                    #print(np.bincount(pn.argmax(0).flatten().astype(int)).argmax())
-                    pn=bins2lab(pn.argmax(0)).transpose((2,1,0))
+                    #print(np.count_nonzero(np.bincount(pn.argmax(0).flatten().astype(int))))
+                    #pn=bins2yuv(pn.argmax(0)).transpose((2,0,1))
+                    pn=ab_from_distr(pn[None,...],T)
                     #print(pn.shape)
                     if zoom:
                         #print(pn.shape)
                         #pn=np.fliplr(np.rot90(pn,-1))
-                        pn=scale(pn,(1,4,4))
-                    else:
-                        #print(pn.shape)
-                        pn=np.flip(np.flip((np.rot90(pn,-1,(1,2))),(0,2)),0)
+                        pn=scale(pn,(1,4,4,1))
+                    
                 #print(truth[i].detach().cpu().numpy().min(),truth[i].detach().cpu().numpy().max())
-                lab_pred=np.concatenate((100*gray,-np.array([128,128])[:,None,None]+np.array([255,255])[:,None,None]*pn))
-                lab_orig=np.concatenate((100*gray,-np.array([128,128])[:,None,None]+np.array([255,255])[:,None,None]*tn))
+                #print(pn.shape,gray.shape)
+                lab_pred=np.concatenate((.5+gray.transpose((1,2,0)),pn[0]),2)
+                lab_orig=np.concatenate((.5+gray,tn))
                 #for arr in (lab_orig[0,...],lab_orig[1,...],truth[i].detach().cpu().numpy()[0,...],truth[i].detach().cpu().numpy()[1,...],
                 #            lab_pred[0,...],lab_pred[1,...],pred[i].detach().cpu().numpy()[0,...],pred[i].detach().cpu().numpy()[1,...]):
                 #    print(arr.min(),arr.max())
@@ -54,17 +59,21 @@ def show_colorization(pred,truth=None,original=None,lab=False,cl=False,zoom=Fals
                 plt.subplot(N,M,counter[i,3])
                 if i==0:
                     plt.title('Colorization')
-                plt.imshow(lr(np.transpose(lab_pred,(1,2,0))))
+                plt.imshow(lr(lab_pred))
                 plt.axis('off')
                 plt.subplot(N,M,counter[i,2])
                 if i==0:
-                    plt.title('Ground truth $ab$-channels')
+                    plt.title('Ground truth $uv$-channels')
                 plt.axis('off')
-                plt.imshow(exposure.adjust_gamma(lr(np.transpose(np.concatenate((100*np.ones(gray.shape),-np.array([128,128])[:,None,None]+np.array([255,255])[:,None,None]*tn)),(1,2,0))),3,.9))
+                #tn=bins2yuv(yuv2bins(tn.transpose((1,2,0)))).transpose((2,0,1))
+                #if cl:
+                    #tn=bins2yuv(yuv2bins(tn.transpose((1,2,0))),np.ones(gray.shape).T)
+                    #plt.imshow(exposure.adjust_gamma(lr(tn),3,.9))
+                plt.imshow(exposure.adjust_gamma(lr(np.transpose(np.concatenate((np.ones(gray.shape),tn)),(1,2,0))),3,.9))
                 plt.subplot(N,M,counter[i,4])
                 if i==0:
-                    plt.title('Colorization $ab$-channels')
-                plt.imshow(exposure.adjust_gamma(lr(np.transpose(np.concatenate((100*np.ones(gray.shape),-np.array([128,128])[:,None,None]+np.array([255,255])[:,None,None]*pn)),(1,2,0))),3,.9))
+                    plt.title('Colorization $uv$-channels')
+                plt.imshow(exposure.adjust_gamma(lr(np.concatenate((np.ones(gray.T.shape),pn[0]),2)),3,.9))
                 plt.axis('off')
 
     else:

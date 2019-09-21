@@ -9,6 +9,7 @@ import sys, getopt
 from models.discriminator import critic
 from models.richzhang import richzhang as generator
 from models.unet import unet
+from models.color_unet import color_unet
 from settings import s
 import time
 import torchvision.transforms as transforms
@@ -36,7 +37,7 @@ def main(argv):
     infinite_loop=s.infinite_loop
     data_path = s.data_path
     drop_rate = 0
-    lab = s.lab
+    lab = True
     weighted_loss=False
     load_list=s.load_list
     help='test.py -b <int> -p <string> -r <int> -w <string>'
@@ -78,6 +79,8 @@ def main(argv):
                 mode = 0
             elif arg in ('u','1','unet'):
                 mode = 1
+            elif arg in ('color','2','cu'):
+                mode = 2
         elif opt=='--beta1':
             beta1 = float(arg)
         elif opt=='--beta2':
@@ -99,6 +102,9 @@ def main(argv):
     elif 'places' in data_path:
         in_size = 224
         dataset = 1
+    elif 'stl' in data_path:
+        in_size = 96
+        dataset = 2
     in_shape=(3,in_size,in_size)
 
     #out_shape=(s.classes,32,32)
@@ -109,13 +115,18 @@ def main(argv):
 
     trainset = load_trainset(data_path,lab=lab,normalize=False,load_list=load_list)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=mbsize,
-                                        shuffle=True, num_workers=2)
+                                        shuffle=True, num_workers=2 if dataset in (0,1) else 0)
  
     print("NETWORK PATH:", weight_path_ending)
     #define output channels of the model
-    classes=274
+    classes = 274
     #define model
-    classifier=generator(drop_rate) if mode==0 else unet(True,drop_rate,classes)
+    if mode == 0:
+        classifier = generator(drop_rate,classes)
+    elif mode == 1:
+        classifier = unet(True,drop_rate,classes)
+    elif mode == 2:
+        classifier = color_unet(True,drop_rate,classes)
     #load weights
     try:
         classifier.load_state_dict(torch.load(weight_path_ending))
@@ -148,14 +159,14 @@ def main(argv):
             "betas": betas,
             "image_loss_weight": image_loss_weight,
             "weighted_loss":weighted_loss,
-            "model":'classification '+['richzhang','U-Net'][mode]
+            "model":'classification '+['richzhang','U-Net','color U-Net'][mode]
         }
     else:
         #load specified parameters from model_dict
         params=model_dict[weights_name]
         mbsize=params['batch_size']
         betas=params['betas']
-        lr=params['lr']
+        #lr=params['lr']
         lab=params['lab']
         image_loss_weight=params['image_loss_weight']
         weighted_loss=params['weighted_loss']
@@ -188,7 +199,6 @@ def main(argv):
     #soft_onehot = torch.load('resources/onehot.pt',map_location=device)
     soft_onehot = torch.load('resources/smooth_onehot.pt',map_location=device)
     
-
     classifier.train()
     #crit.train()
     # run over epochs
@@ -196,16 +206,18 @@ def main(argv):
         g_running=0
         #load batches          
         for i,batch in enumerate(trainloader):
+            
             if dataset == 0: #cifar 10
                 (image,_) = batch
-            elif dataset == 1: #places
+            elif dataset in (1,2): #places
                 image = batch
                 
-            batch_size=image.shape[0]
-            if dataset == 0: #cifar 10
-                image=np.transpose(image,(0,3,2,1))
-                image=np.transpose(color.rgb2lab(image),(0,3,2,1))
+            #batch_size=image.shape[0]
+            if dataset == 0: #cifar/stl 10
+                image=np.transpose(image,(0,2,3,1))
+                image=np.transpose(color.rgb2lab(image),(0,3,1,2))
                 image=torch.from_numpy((image-np.array([50,0,0])[None,:,None,None])).float()
+            
             X=image[:,:1,:,:].to(device) #set X to the Lightness of the image
             image=image[:,1:,:,:].to(device) #image is a and b channel
             
@@ -217,7 +229,7 @@ def main(argv):
             #softmax activated distribution
             model_out=classifier(X).double()
             #create bin coded verion of ab ground truth
-            binab=ab2bins(image)
+            binab=ab2bins(image.transpose(1,3).transpose(1,2))
             if mode==0:
                 #print(binab.shape)
                 binab=F.interpolate(torch.unsqueeze(binab.float(),dim=1),scale_factor=(.25,.25)).long()
