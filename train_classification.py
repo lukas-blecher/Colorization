@@ -195,7 +195,7 @@ def main(argv):
     if dataset==0:
         weights=torch.load('resources/cifar-lab-class-weights.pt').numpy()
     elif dataset==2:
-        weights=torch.load('resources/class-weights-lab150-stl_alt2.pt')
+        weights=torch.load('resources/class-weights-lab150-stl.pt')
     #criterion = nn.CrossEntropyLoss(weight=weights).to(device) if weighted_loss else nn.CrossEntropyLoss().to(device)
     criterion = softCossEntropyLoss(weights=weights,device=device) if weighted_loss else softCossEntropyLoss(weights=None,device=device)
     #additional gan loss: l1 loss
