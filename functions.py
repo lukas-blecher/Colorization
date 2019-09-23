@@ -106,7 +106,7 @@ class BigPlacesDataset(Dataset):
             if self.norm:
                 image = (color.rgb2lab(image)-self.offset[None,None,:])/self.range[None,None,:]
             else:
-                image = (color.rgb2yuv(image)-np.array([50,0,0])[None,None,:])
+                image = (color.rgb2lab(image)-np.array([50,0,0])[None,None,:])
 
         if self.transform:
             image = torch.tensor(np.transpose(image, (2,0,1))).type(torch.FloatTensor)
@@ -147,7 +147,7 @@ class STL(Dataset):
         image = self.data[item]
         image = self.tf(image).numpy().transpose((1,2,0))
         if self.lab:
-            image = (color.rgb2yuv(image)-np.array([50,0,0])[None,None,:])
+            image = (color.rgb2lab(image)-np.array([50,0,0])[None,None,:])
 
         if self.transform:
             image = torch.tensor(np.transpose(image, (2,0,1))).type(torch.FloatTensor)
