@@ -20,7 +20,7 @@ def load_trainset(data_path,train=True, lab=True, load_list=False,normalize=True
     elif 'places' in data_path:
         trainset = PlacesDataset(data_path,lab=lab,load_list=load_list,normalize=normalize)
     elif 'stl' in data_path:
-        trainset = ImageSTL(data_path, train=train, lab=lab, download=True, transform=transforms.ToTensor())
+        trainset = STL(data_path, train=train, lab=lab, download=True, transform=transforms.ToTensor())
         
     return trainset
 
