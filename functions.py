@@ -20,7 +20,7 @@ def load_trainset(data_path,train=True, lab=True, load_list=False,normalize=True
     elif 'places' in data_path:
         trainset = PlacesDataset(data_path,lab=lab,load_list=load_list,normalize=normalize)
     elif 'stl' in data_path:
-        trainset = STL(data_path, train=train, lab=lab, download=True, transform=transforms.ToTensor())
+        trainset = ImageSTL(data_path, train=train, lab=lab, download=True, transform=transforms.ToTensor())
         
     return trainset
 
@@ -153,6 +153,56 @@ class STL(Dataset):
             image = torch.tensor(np.transpose(image, (2,0,1))).type(torch.FloatTensor)
         return image
 
+class ImageSTL(Dataset):
+    def __init__(self, path, download=False, transform=True,train=True, lab=True, load_list=True, normalize=True):
+        if download:
+            tvstl=datasets.STL10(path,download=True)
+            from tqdm import tqdm_notebook
+            from PIL import Image
+            for i in tqdm(range(len(tvstl.data))):
+                Image.fromarray(tvstl.data[i]).save(os.path.join(path,'%s/stl_%06d.png'%(('test','train')[int(train)],i)))
+        self.path = os.path.join(path,'train' if train else 'test')
+        if load_list:          
+            if path[-1] == "/":
+                list_path = self.path[:-1] + '-list.txt'
+            else:
+                list_path = self.path + '-list.txt'
+            try:
+                with open(list_path, 'r') as f:
+                    self.file_list = [line.rstrip('\n') for line in f]
+            except FileNotFoundError:
+                print("List not found, new list initialized")
+                self.file_list = sorted(list(set(os.listdir(self.path))))
+                with open(list_path, 'w') as f:
+                    for s in self.file_list:
+                        f.write(str(s) + '\n')
+        else:
+            self.file_list = sorted(list(set(os.listdir(self.path))))
+        
+        self.transform = transform
+        self.tf = transforms.Compose([transforms.ToPILImage(),
+                                      transforms.ColorJitter(hue=.025, saturation=.15),
+                                      transforms.RandomHorizontalFlip(),
+                                      transforms.ToTensor()])
+        self.lab = lab
+        self.norm = normalize
+        #need to use transforms.Normalize in future but currently broken
+        self.offset=np.array([50,0,0])
+        self.range=np.array([1,1,1])
+    def __len__(self):
+        return len(self.file_list)
+    
+    def __getitem__(self, item):
+        img_name = os.path.join(self.path,
+                                self.file_list[item])
+        image = plt.imread(img_name)*255
+        image = self.tf(image.astype(np.uint8)).numpy().transpose((1,2,0))
+        if self.lab:
+            image = (color.rgb2lab(image)-np.array([50,0,0])[None,None,:])
+
+        if self.transform:
+            image = torch.tensor(np.transpose(image, (2,0,1))).type(torch.FloatTensor)
+        return image
 
 #image preprocessing
 #binmap=torch.load('resources/binmap.pt').to('cuda' if torch.cuda.is_available() else 'cpu')
