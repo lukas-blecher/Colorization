@@ -93,6 +93,7 @@ def main(argv):
             weighted_loss=True
         elif opt =='--load-list':
             load_list=not load_list
+        
     device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     dataset=None
     in_size = 256
@@ -164,7 +165,7 @@ def main(argv):
     else:
         #load specified parameters from model_dict
         params=model_dict[weights_name]
-        mbsize=params['batch_size']
+        #mbsize=params['batch_size']
         betas=params['betas']
         #lr=params['lr']
         lab=params['lab']
@@ -193,7 +194,8 @@ def main(argv):
     weights=np.load('resources/class-weights.npy')
     if dataset==0:
         weights=torch.load('resources/cifar-lab-class-weights.pt').numpy()
-    weights=torch.load('resources/class-weights-lab150.pt').numpy()
+    elif dataset==2:
+        weights=torch.load('resources/class-weights-lab150-stl_alt2.pt')
     #criterion = nn.CrossEntropyLoss(weight=weights).to(device) if weighted_loss else nn.CrossEntropyLoss().to(device)
     criterion = softCossEntropyLoss(weights=weights,device=device) if weighted_loss else softCossEntropyLoss(weights=None,device=device)
     #additional gan loss: l1 loss
