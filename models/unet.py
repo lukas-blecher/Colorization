@@ -24,7 +24,7 @@ class unet(nn.Module):
         self.expanse4 = up_conv(128, bn, drop_rate)
         #out convolution
         self.out_conv = nn.Conv2d(64,classes,1)
-        self.output = nn.Softmax(1) if classes>3 else nn.Sigmoid()
+        self.output = nn.Identity() if classes>3 else nn.Sigmoid()
         # initializing weights:
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
