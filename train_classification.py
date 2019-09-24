@@ -237,7 +237,7 @@ def main(argv):
             binab=ab2bins(image.transpose(1,3).transpose(1,2))
             if mode==0:
                 #print(binab.shape)
-                binab=F.interpolate(torch.unsqueeze(binab.float(),dim=1),scale_factor=(.25,.25)).long()
+                binab=F.interpolate(binab.float(),scale_factor=(.25,.25)).long()
                 #binab=zoom(binab.cpu(),(1,.25,.25),order=0)
                 #binab=torch.from_numpy(binab).long().to(device)
             binab=torch.squeeze(binab,1)#.long()
