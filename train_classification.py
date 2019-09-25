@@ -10,6 +10,7 @@ from models.discriminator import critic
 from models.richzhang import richzhang as generator
 from models.unet import unet
 from models.color_unet import color_unet
+from models.middle_unet import middle_unet
 from settings import s
 import time
 import torchvision.transforms as transforms
@@ -41,7 +42,6 @@ def main(argv):
     weighted_loss=True
     weight_lambda=None
     load_list=s.load_list
-    exponent = 1
     help='test.py -b <int> -p <string> -r <int> -w <string>'
     try:
         opts, args = getopt.getopt(argv,"he:b:r:w:l:s:n:p:d:i:m:",
@@ -83,6 +83,8 @@ def main(argv):
                 mode = 1
             elif arg in ('color','2','cu'):
                 mode = 2
+            elif arg in ('mu','3','middle'):
+                mode = 3
         elif opt=='--beta1':
             beta1 = float(arg)
         elif opt=='--beta2':
@@ -131,6 +133,8 @@ def main(argv):
         classifier = unet(True,drop_rate,classes)
     elif mode == 2:
         classifier = color_unet(True,drop_rate,classes)
+    elif mode == 3:
+        classifier = middle_unet(True,drop_rate,classes)
     #load weights
     try:
         classifier.load_state_dict(torch.load(weight_path_ending))
@@ -163,7 +167,7 @@ def main(argv):
             "betas": betas,
             "image_loss_weight": image_loss_weight,
             "weighted_loss":weighted_loss,
-            "model":'classification '+['richzhang','U-Net','color U-Net'][mode]
+            "model":'classification '+['richzhang','U-Net','color U-Net','middle U-Net'][mode]
         }
     else:
         #load specified parameters from model_dict
@@ -181,21 +185,22 @@ def main(argv):
     #optimizer
     optimizer=optim.Adam(classifier.parameters(),lr=lr,betas=betas)
     class_weight_path='resources/class-weights.npy'
-    weights=np.load(class_weight_path)
-    if dataset==0:
-        class_weight_path='resources/cifar-lab-class-weights.pt'
-        weights=torch.load(class_weight_path).numpy()
-    elif dataset==2:
-        if weight_lambda:
-            class_weight_path = 'resources/probdist_lab.pt'
-            prob_dict = torch.load(class_weight_path)
-            prob = np.array(list(prob_dict.values()))
-            weights = 1/((1 - weight_lambda)*prob/prob.sum() + weight_lambda/classes)
-        else:
-            class_weight_path = 'resources/class-weights-lab150-stl.pt'
-            weights = torch.load(class_weight_path)
+    if weighted_loss:
+        weights=np.load(class_weight_path)
+        if dataset==0:
+            class_weight_path='resources/cifar-lab-class-weights.pt'
+            weights=torch.load(class_weight_path).numpy()
+        elif dataset==2:
+            if weight_lambda:
+                class_weight_path = 'resources/probdist_lab.pt'
+                prob_dict = torch.load(class_weight_path)
+                prob = np.array(list(prob_dict.values()))
+                weights = 1/((1 - weight_lambda)*prob/prob.sum() + weight_lambda/classes)
+            else:
+                class_weight_path = 'resources/class-weights-lab150-stl.pt'
+                weights = torch.load(class_weight_path)
             
-    print('Class-weights loaded from ' + class_weight_path)
+        print('Class-weights loaded from ' + class_weight_path)
     #criterion = nn.CrossEntropyLoss(weight=weights).to(device) if weighted_loss else nn.CrossEntropyLoss().to(device)
     criterion = softCossEntropyLoss(weights=weights,device=device) if weighted_loss else softCossEntropyLoss(weights=None,device=device)
     #additional gan loss: l1 loss

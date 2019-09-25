@@ -61,7 +61,7 @@ def main(argv):
         elif opt =='-c':
             classification=True
             lab=True
-        elif opt=='t':
+        elif opt=='-t':
             temp=float(arg)
         
     device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
