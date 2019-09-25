@@ -6,6 +6,7 @@ from models.model import model
 from models.endecoder import generator
 from models.richzhang import richzhang
 from models.color_unet import color_unet
+from models.middle_unet import middle_unet
 from torchvision import transforms
 from settings import s
 import torchvision.datasets as datasets
@@ -54,6 +55,8 @@ def main(argv):
                 mode = 3
             elif arg in ('colorunet','cu','4'):
                 mode = 4
+            elif arg in ('mu','5','middle'):
+                mode = 5
         elif opt in ('-l','--lab'):
             lab=True
         elif opt in ("-d", "--drop-rate"):
@@ -99,6 +102,8 @@ def main(argv):
         zoom=True
     elif mode == 4:
         UNet=color_unet(True,drop_rate,classes)
+    elif mode == 5:
+        UNet = middle_unet(True,drop_rate,classes)
     #load weights
     try:
         UNet.load_state_dict(torch.load(weight_path, map_location=device))

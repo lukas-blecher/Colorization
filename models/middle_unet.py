@@ -12,19 +12,19 @@ class middle_unet(nn.Module):
         self.classes=classes
         super(middle_unet,self).__init__()
         #first layer without pooling
-        self.input = double_conv(1,16, bn)
+        self.input = double_conv(1,32, bn)
         #begin contraction
-        self.contract1 = double_conv_pool(16,32, bn, drop_rate)
-        self.contract2 = double_conv_pool(32,64, bn, drop_rate)
-        self.contract3 = double_conv_pool(64,128, bn, drop_rate)
-        self.contract4 = double_conv_pool(128,256, bn, drop_rate)
+        self.contract1 = double_conv_pool(32,64, bn, drop_rate)
+        self.contract2 = double_conv_pool(64,128, bn, drop_rate)
+        self.contract3 = double_conv_pool(128,256, bn, drop_rate)
+        self.contract4 = double_conv_pool(256,512, bn, drop_rate)
         #begin expansion
-        self.expanse1 = up_conv(256, bn, drop_rate)
-        self.expanse2 = up_conv(128, bn, drop_rate)
-        self.expanse3 = up_conv(64, bn, drop_rate)
-        self.expanse4 = up_conv(32, bn, drop_rate)
+        self.expanse1 = up_conv(512, bn, drop_rate)
+        self.expanse2 = up_conv(256, bn, drop_rate)
+        self.expanse3 = up_conv(128, bn, drop_rate)
+        self.expanse4 = up_conv(64, bn, drop_rate)
         #out convolution
-        self.out_conv = nn.Conv2d(16,classes,1)
+        self.out_conv = nn.Conv2d(32,classes,1)
         self.output = nn.Softmax(1) if classes>3 else nn.Sigmoid()
         # initializing weights:
         for m in self.modules():
