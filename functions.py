@@ -276,7 +276,10 @@ def bins2ab(bin_rep,L=None):
 
 def ab_from_distr(distr,T=1,Y=None,bins=None):
     bins=tbins.cpu() if bins is None else bins
-    distr=nn.Softmax(1)(torch.Tensor(distr))
+    if not distr.sum() == len(distr): #already in softmax
+        distr=torch.Tensor(distr)
+    else:
+        distr=nn.Softmax(1)(torch.Tensor(distr))
     temp_dist=torch.nn.functional.softmax(torch.log(distr)/T,1)
     img=torch.matmul(temp_dist.transpose(1,2).transpose(2,3),bins.float())
     #img=functions.bins2yuv(sample.detach().numpy(),Lten.numpy())

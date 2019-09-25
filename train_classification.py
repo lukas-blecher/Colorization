@@ -40,11 +40,12 @@ def main(argv):
     lab = True
     weighted_loss=False
     load_list=s.load_list
+    exponent = 1
     help='test.py -b <int> -p <string> -r <int> -w <string>'
     try:
         opts, args = getopt.getopt(argv,"he:b:r:w:l:s:n:p:d:i:m:",
             ['epochs=',"mbsize=","report-freq=",'weight-path=', 'lr=','save-freq=','weight-name=','data_path=','drop_rate='
-            'beta1=','beta2=','lab','image-loss-weight=','weighted','mode='])
+            'beta1=','beta2=','lab','image-loss-weight=','weighted','mode=','exp='])
     except getopt.GetoptError:
         print(help)
         sys.exit(2)
@@ -93,7 +94,8 @@ def main(argv):
             weighted_loss=True
         elif opt =='--load-list':
             load_list=not load_list
-        
+        elif opt =='--exp':
+            exponent = float(arg)
     device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     dataset=None
     in_size = 256
@@ -191,11 +193,25 @@ def main(argv):
         crit.apply(weights_init_normal)'''
     #optimizer
     optimizer=optim.Adam(classifier.parameters(),lr=lr,betas=betas)
-    weights=np.load('resources/class-weights.npy')
+    class_weight_path='resources/class-weights.npy'
+    weights=np.load(class_weight_path)
     if dataset==0:
-        weights=torch.load('resources/cifar-lab-class-weights.pt').numpy()
+        class_weight_path='resources/cifar-lab-class-weights.pt'
+        weights=torch.load(class_weight_path).numpy()
     elif dataset==2:
-        weights=torch.load('resources/class-weights-lab150-stl.pt')
+        #weights=torch.load('resources/class-weights-lab150-stl.pt')
+        
+        if not exponent == -1:
+            class_weight_path = 'resources/king-class-weights-stl.pt'
+            weights = torch.load(class_weight_path)**exponent
+            #prob = np.array(list(prob_dict.values()))
+            #weights = 1/((1 - weight_lambda)*prob/prob.sum() + weight_lambda/classes)
+            
+        else:
+            class_weight_path = 'resources/class-weights-lab150-stl.pt'
+            weights = torch.load(class_weight_path)
+            
+    print('Class-weights loaded from ' + class_weight_path)
     #criterion = nn.CrossEntropyLoss(weight=weights).to(device) if weighted_loss else nn.CrossEntropyLoss().to(device)
     criterion = softCossEntropyLoss(weights=weights,device=device) if weighted_loss else softCossEntropyLoss(weights=None,device=device)
     #additional gan loss: l1 loss
