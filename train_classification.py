@@ -38,14 +38,15 @@ def main(argv):
     data_path = s.data_path
     drop_rate = 0
     lab = True
-    weighted_loss=False
+    weighted_loss=True
+    weight_lambda=None
     load_list=s.load_list
     exponent = 1
     help='test.py -b <int> -p <string> -r <int> -w <string>'
     try:
         opts, args = getopt.getopt(argv,"he:b:r:w:l:s:n:p:d:i:m:",
             ['epochs=',"mbsize=","report-freq=",'weight-path=', 'lr=','save-freq=','weight-name=','data_path=','drop_rate='
-            'beta1=','beta2=','lab','image-loss-weight=','weighted','mode=','exp='])
+            'beta1=','beta2=','lab','image-loss-weight=','weighted','mode=','lambda='])
     except getopt.GetoptError:
         print(help)
         sys.exit(2)
@@ -91,11 +92,11 @@ def main(argv):
         elif opt in ('-i','--image-loss-weight'):
             image_loss_weight=float(arg)
         elif opt =='--weighted':
-            weighted_loss=True
+            weighted_loss= not weighted_loss
         elif opt =='--load-list':
             load_list=not load_list
-        elif opt =='--exp':
-            exponent = float(arg)
+        elif opt =='--lambda':
+            weight_lambda = float(arg)
     device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     dataset=None
     in_size = 256
@@ -177,20 +178,6 @@ def main(argv):
         #memorize how many epochs already were trained if we continue training
         prev_epochs=params['epochs']+1
 
-    
-    '''#define critic 
-    if dataset == 0: #cifar 10
-        crit=critic(trainset.data.shape[1],classes=classes).to(device)
-    elif dataset == 1: #places
-        crit=critic(256,classes=classes).to(device)
-    #load discriminator weights
-    crit_path=os.path.join(weight_path,weights_name+'_crit.pth')
-    try:
-        crit.load_state_dict(torch.load(crit_path))
-        print('Loaded weights for discriminator from %s'%crit_path)
-    except FileNotFoundError:
-        print('Initialize new weights for discriminator')
-        crit.apply(weights_init_normal)'''
     #optimizer
     optimizer=optim.Adam(classifier.parameters(),lr=lr,betas=betas)
     class_weight_path='resources/class-weights.npy'
@@ -199,14 +186,11 @@ def main(argv):
         class_weight_path='resources/cifar-lab-class-weights.pt'
         weights=torch.load(class_weight_path).numpy()
     elif dataset==2:
-        #weights=torch.load('resources/class-weights-lab150-stl.pt')
-        
-        if not exponent == -1:
-            class_weight_path = 'resources/king-class-weights-stl.pt'
-            weights = torch.load(class_weight_path)**exponent
-            #prob = np.array(list(prob_dict.values()))
-            #weights = 1/((1 - weight_lambda)*prob/prob.sum() + weight_lambda/classes)
-            
+        if weight_lambda:
+            class_weight_path = 'resources/probdist_lab.pt'
+            prob_dict = torch.load(class_weight_path)
+            prob = np.array(list(prob_dict.values()))
+            weights = 1/((1 - weight_lambda)*prob/prob.sum() + weight_lambda/classes)
         else:
             class_weight_path = 'resources/class-weights-lab150-stl.pt'
             weights = torch.load(class_weight_path)
