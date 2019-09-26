@@ -284,7 +284,7 @@ def ab_from_distr(distr,T=1,Y=None,bins=None):
     img=torch.matmul(temp_dist.transpose(1,2).transpose(2,3),bins.float())
     #img=functions.bins2yuv(sample.detach().numpy(),Lten.numpy())
     if not Y is None:
-        img=torch.cat((Lten.transpose(1,2).transpose(2,3).float(),img),3)
+        img=torch.cat((Y.transpose(1,2).transpose(2,3).float(),img),3)
     return img.numpy()
 
 class softCossEntropyLoss(nn.Module):
@@ -305,3 +305,28 @@ class softCossEntropyLoss(nn.Module):
             return -torch.sum(torch.sum(labels*torch.log(output),1),(1,2))        
         else:
             return -torch.sum((self.weights[None,:,None,None]*labels).sum(1)*torch.sum(labels*torch.log(output),1),(1,2))
+
+def normalize(tensor, mean, std, inplace=False):
+    """Modfied function from https://pytorch.org/docs/stable/_modules/torchvision/transforms/functional.html 
+    
+    Normalize a tensor image with mean and standard deviation.
+
+   
+    Args:
+        tensor (Tensor): Tensor image of size (B, C, H, W) to be normalized.
+        mean (sequence): Sequence of means for each channel.
+        std (sequence): Sequence of standard deviations for each channel.
+        inplace(bool,optional): Bool to make this operation inplace.
+
+    Returns:
+        Tensor: Normalized Tensor image.
+    """
+   
+    if not inplace:
+        tensor = tensor.clone()
+
+    dtype = tensor.dtype
+    mean = torch.as_tensor(mean, dtype=dtype, device=tensor.device)
+    std = torch.as_tensor(std, dtype=dtype, device=tensor.device)
+    tensor.sub_(mean[None,:, None, None]).div_(std[None,:, None, None])
+    return tensor
