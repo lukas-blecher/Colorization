@@ -6,7 +6,7 @@ import os
 import numpy as np
 from itertools import count
 import sys, getopt
-from models.stlclassifier import Classifier
+#from models.stlclassifier import Classifier
 from settings import s
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
@@ -22,7 +22,7 @@ def main(argv):
     report_freq=s.report_freq
     weight_path=s.weights_path
     weights_name='Metric'
-    lr=s.learning_rate
+    lr=.0005
     save_freq = s.save_freq
     epochs = s.epochs
     beta1,beta2=s.betas
@@ -74,10 +74,13 @@ def main(argv):
     betas=(beta1,beta2)
     weight_path_ending=os.path.join(weight_path,weights_name+'.pt')
 
-    trainset = datasets.STL10(data_path,split='test',transform=transforms.Compose([transforms.Resize(224),
+    trainset = datasets.STL10(data_path,split='test',transform=transforms.Compose([
+                                                                  transforms.RandomHorizontalFlip(),
+                                                                  transforms.ColorJitter(hue=.025, saturation=.15),
+                                                                  transforms.Resize(224),
                                                                   transforms.ToTensor(),
                                                                   transforms.Normalize([0.5,.5,.5], [0.5,.5,.5])
-                                                                 ]))
+                                                                  ]))
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=mbsize, shuffle=True, num_workers=0)
     alex=alexnet()
     alex.load_state_dict(torch.load('weights/alexnet.pth'))
