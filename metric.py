@@ -24,7 +24,7 @@ def main(argv):
     alex.load_state_dict(torch.load('weights/alexnet.pth'))
     alex.eval()
 
-    classifier_path = 'weights/ClassNorm.pt'
+    classifier_path = 'weights/alexNorm.pt'
     weight_path = None
     mbsize = 16
     col_space = None
