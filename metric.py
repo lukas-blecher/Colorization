@@ -22,8 +22,9 @@ def main(argv):
 
     alex = alexnet().to(device)
     alex.load_state_dict(torch.load('weights/alexnet.pth'))
+    alex.eval()
 
-    classifier_path = 'weights/Metric.pt'
+    classifier_path = 'weights/ClassNorm.pt'
     weight_path = None
     mbsize = 16
     col_space = None
@@ -84,6 +85,7 @@ def main(argv):
 
     classifier=nn.Sequential(nn.Linear(1000,512),nn.ReLU(),nn.Linear(512,10)).to(device)
     classifier.load_state_dict(torch.load(classifier_path, map_location=device))
+    classifier.eval()
 
     testset = datasets.STL10(stl_path,split='train',transform=transforms.Compose([transforms.ToTensor()]))
     testloader = torch.utils.data.DataLoader(testset, batch_size=mbsize, shuffle=True, num_workers=0)
@@ -114,8 +116,8 @@ def check_colorization(batch, labels, col_space, Col_Net, classifier, alex, T=1)
         #using the matlab formula: 0.2989 * R + 0.5870 * G + 0.1140 * B and load data to gpu
         X=(batch.clone()*gray).sum(1).to(device).view(-1,1,96,96)
         batch=batch.float().to(device)
-    if rgb:
-        normalize(X,(0,),(1,),True)
+    #if rgb:
+    #    normalize(X,(0,),(1,),True)
     if yuv:
         normalize(X,(.5,),(.5,),True)
     elif lab:
@@ -149,7 +151,7 @@ def check_colorization(batch, labels, col_space, Col_Net, classifier, alex, T=1)
         rgb_batch = col_batch
     
     rgb_batch = F.interpolate(rgb_batch, size = (224,224))
-    rgb_batch = 2*rgb_batch - 1
+    rgb_batch = normalize(rgb_batch,[0.485, 0.456, 0.406],[0.229, 0.224, 0.225])
     
     with torch.no_grad():
         class_out = alex(rgb_batch.to(device))
