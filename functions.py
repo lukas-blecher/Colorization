@@ -304,7 +304,7 @@ class softCossEntropyLoss(nn.Module):
         if self.weights is None:
             return -torch.sum(torch.sum(labels*torch.log(output),1),(1,2))        
         else:
-            return -torch.sum((self.weights[None,:,None,None]*labels).sum(1)*torch.sum(labels*torch.log(output),1),(1,2))
+            return -torch.sum((self.weights[None,:,None,None]*labels).sum(1)*torch.sum(labels*torch.log(output+1e-17),1),(1,2))
 
 def normalize(tensor, mean, std, inplace=False):
     """Modfied function from https://pytorch.org/docs/stable/_modules/torchvision/transforms/functional.html 
