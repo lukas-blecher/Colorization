@@ -83,7 +83,7 @@ def main(argv):
         loader = [(transforms.ToTensor()(img)[None,...].float(),input_image)]
         
     
-    classes=(150 if classification else 2) if lab else 3
+    classes=(340 if classification else 2) if lab else 3
 
     #define model
     UNet=None

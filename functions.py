@@ -214,8 +214,8 @@ def torch_dist_mat(X,Y):
     return -2 * torch.matmul(X, torch.transpose(Y,1,2).double()) + torch.sum(Y**2,dim=2).double()[:,None] +torch.unsqueeze(torch.sum(X**2, dim=2),2)  
 #bins=np.load('resources/norm_bins.npy')
 #tbins=torch.from_numpy(bins).to('cuda' if torch.cuda.is_available() else 'cpu')
-tbins = torch.unsqueeze(torch.load('resources/lab_bins.pt'),0).to('cuda' if torch.cuda.is_available() else 'cpu')
-nbins = torch.unsqueeze(torch.load('resources/lab_bins.pt'),0).numpy()
+tbins = torch.unsqueeze(torch.load('resources/biglab_bins.pt'),0).to('cuda' if torch.cuda.is_available() else 'cpu')
+nbins = torch.unsqueeze(torch.load('resources/biglab_bins.pt'),0).numpy()
 def ab2bins(image,bins=None):
     #takes image with only ab channels and returns the 
     shape=image.shape

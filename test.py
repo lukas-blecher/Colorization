@@ -86,7 +86,7 @@ def main(argv):
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=3,
                                         shuffle=True, num_workers=2 if dataset in (0,1) else 0)
     print("Loaded dataset from", data_path)
-    classes=(150 if classification else 2) if lab else 3
+    classes=(340 if classification else 2) if lab else 3
 
     #define model
     UNet=None

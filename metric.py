@@ -71,7 +71,7 @@ def main(argv):
         if col_space == 'yuv':
             classes = 42
         elif col_space == 'lab':
-            classes = 150
+            classes = 340
     if mode == 0:
         Col_Net = unet(True, drop_rate, classes).to(device)
     elif mode == 1:

@@ -125,7 +125,7 @@ def main(argv):
  
     print("NETWORK PATH:", weight_path_ending)
     #define output channels of the model
-    classes = 150
+    classes = 340
     #define model
     if mode == 0:
         classifier = generator(drop_rate,classes)
@@ -192,7 +192,7 @@ def main(argv):
             weights=torch.load(class_weight_path).numpy()
         elif dataset==2:
             if weight_lambda:
-                class_weight_path = 'resources/probdist_lab.pt'
+                class_weight_path = 'resources/probdist_biglab.pt'
                 prob_dict = torch.load(class_weight_path)
                 prob = np.array(list(prob_dict.values()))
                 weights = 1/((1 - weight_lambda)*prob/prob.sum() + weight_lambda/classes)
@@ -207,7 +207,7 @@ def main(argv):
     #l1loss = nn.L1Loss().to(device)
     loss_hist=[]
     #soft_onehot = torch.load('resources/onehot.pt',map_location=device)
-    soft_onehot = torch.load('resources/smooth_onehot150.pt',map_location=device)
+    soft_onehot = torch.load('resources/smooth_onehot340.pt',map_location=device)
     
     classifier.train()
     #crit.train()

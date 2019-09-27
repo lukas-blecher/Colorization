@@ -79,7 +79,7 @@ def main(argv):
                                                                   transforms.ColorJitter(hue=.025, saturation=.15),
                                                                   transforms.Resize(224),
                                                                   transforms.ToTensor(),
-                                                                  transforms.Normalize([0.5,.5,.5], [0.5,.5,.5])
+                                                                  transforms.Normalize([0.485, 0.456, 0.406],[0.229, 0.224, 0.225])
                                                                   ]))
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=mbsize, shuffle=True, num_workers=0)
     alex=alexnet()
