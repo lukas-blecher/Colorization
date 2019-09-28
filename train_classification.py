@@ -250,6 +250,7 @@ def main(argv):
             #print('ground truth',np.bincount(binab.detach().cpu().numpy().flatten()))
             #print('output',np.bincount(model_out.detach().cpu().numpy().argmax(1).flatten()))
             binab=soft_onehot[:,binab].transpose(0,1).double()
+            
             #calculate loss 
             #print(model_out.shape,binab.shape)
             loss=criterion(model_out,binab).mean(0)
