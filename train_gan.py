@@ -175,7 +175,7 @@ def main(argv):
             "lab":lab,
             "betas": betas,
             "image_loss_weight": image_loss_weight,
-            "model":['custom','unet','encoder-decoder'][mode]
+            "model":['custom','unet','encoder-decoder','middle-unet','color-unet'][mode]
         }
     else:
         #load specified parameters from model_dict
