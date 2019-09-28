@@ -74,7 +74,7 @@ def main(argv):
         in_size = 32
         dataset = 0
     elif 'places' in data_path:
-        in_size = 256
+        in_size = 224
         dataset = 1
     elif 'stl' in data_path:
         in_size = 96

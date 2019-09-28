@@ -25,7 +25,10 @@ class middle_unet(nn.Module):
         self.expanse4 = up_conv(64, bn, drop_rate)
         #out convolution
         self.out_conv = nn.Conv2d(32,classes,1)
-        self.output = nn.Softmax(1) if classes>3 else nn.Sigmoid()
+        if not classes == 2:
+            self.output = nn.Softmax(1) if classes>3 else nn.Sigmoid()
+        else:
+            self.output = nn.Tanh()
         # initializing weights:
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -57,5 +60,8 @@ class middle_unet(nn.Module):
         x = self.expanse3(x2,x)
         x = self.expanse4(x1,x)
         x = self.out_conv(x)
-        return self.output(x) #torch.sigmoid(x)
+        if not self.classes == 2:
+            return self.output(x)
+        else:
+            return 110*self.output(x) #torch.sigmoid(x)
 

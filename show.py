@@ -43,7 +43,13 @@ def show_colorization(pred,truth=None,original=None,lab=False,cl=False,zoom=Fals
                     
                 #print(truth[i].detach().cpu().numpy().min(),truth[i].detach().cpu().numpy().max())
                 #print(pn.shape,gray.shape)
-                lab_pred=np.concatenate((50+gray.transpose((1,2,0)),pn[0]),2)
+                
+
+                if cl:
+                    lab_pred=np.concatenate((50+gray.transpose((1,2,0)),pn[0]),2)
+                else:
+                    lab_pred=np.concatenate((50+gray,pn)).transpose(1,2,0)
+                    
                 if truth is not None: 
                     lab_orig=np.concatenate((50+gray,tn))
                 #for arr in (lab_orig[0,...],lab_orig[1,...],truth[i].detach().cpu().numpy()[0,...],truth[i].detach().cpu().numpy()[1,...],
@@ -74,7 +80,10 @@ def show_colorization(pred,truth=None,original=None,lab=False,cl=False,zoom=Fals
                     plt.subplot(N,M,counter[i,4])
                 if i==0:
                     plt.title('Colorization $ab$-channels')
-                plt.imshow(exposure.adjust_gamma(lr(np.concatenate((100*np.ones(gray.T.shape),pn[0]),2)),3,.9))
+                if cl:
+                    plt.imshow(exposure.adjust_gamma(lr(np.concatenate((np.ones(gray.T.shape),pn[0]),2)),3,.9))
+                else:
+                    plt.imshow(exposure.adjust_gamma(lr(np.concatenate((np.ones(gray.shape),pn)).transpose(1,2,0)),3,.9))                
                 plt.axis('off')
                 if return_img:
                     img_list.append(lr(lab_pred))
