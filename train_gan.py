@@ -9,6 +9,8 @@ from models.discriminator import critic
 from models.model import model
 from models.unet import unet
 from models.endecoder import generator
+from models.middle_unet import middle_unet
+from models.color_unet import color_unet
 from settings import s
 import time
 import torchvision.transforms as transforms
@@ -72,6 +74,10 @@ def main(argv):
                 mode = 1
             elif arg in ('ende','2'):
                 mode = 2
+            elif arg in ('mu','3','middle'):
+                mode = 3
+            elif arg in ('cu','4','middle'):
+                mode = 4
         elif opt in ("-p", "--data_path"):
             data_path = str(arg)
         elif opt in ("-d", "--drop_rate"):
@@ -95,6 +101,9 @@ def main(argv):
     elif 'places' in data_path:
         in_size = 224
         dataset = 1
+    elif 'stl' in data_path:
+        in_size = 96
+        dataset = 2
     in_shape=(3,in_size,in_size)
 
     #out_shape=(s.classes,32,32)
@@ -119,6 +128,11 @@ def main(argv):
             UNet=unet(drop_rate=drop_rate,classes=classes)
         elif mode ==2:
             UNet=generator(drop_rate,classes)
+        elif mode ==3:
+            UNet=middle_unet(drop_rate=drop_rate,classes=classes)
+        elif mode ==4:
+            UNet=color_unet(drop_rate=drop_rate,classes=classes)
+        
         #load weights
         try:
             UNet.load_state_dict(torch.load(weight_path_ending))
@@ -208,7 +222,7 @@ def main(argv):
         for i,batch in enumerate(trainloader):
             if dataset == 0: #cifar 10
                 (image,_) = batch
-            elif dataset == 1: #places
+            elif dataset in (1,2): #places
                 image = batch
                 
             batch_size=image.shape[0]
