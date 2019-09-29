@@ -71,7 +71,7 @@ def main(argv):
     if data_path is None and input_image is None:
         print('Please select an image or folder')
         sys.exit()
-    trafo=transforms.Compose([transforms.Grayscale(3 if lab else 1), transforms.Resize((128,128))])
+    trafo=transforms.Compose([transforms.Grayscale(3 if lab else 1), transforms.Resize((96,96))])
     device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if data_path is not None: 
         dataset = ImageDataset(data_path,lab=lab,pretrafo=trafo)
@@ -134,6 +134,7 @@ class ImageDataset(torch.utils.data.Dataset):
     def __init__(self, path, transform=True, lab=True, normalize=True,pretrafo=transforms.Resize((96,96))):
         self.path=path
         self.file_list = sorted(list(set(os.listdir(self.path))))
+        self.file_list = [f for f in self.file_list if os.path.isfile(os.path.join(path, f))]
         self.transform = transform
         self.resize=pretrafo
         self.lab = lab
