@@ -69,8 +69,7 @@ class unet(nn.Module):
 # two 3x3 convolutional layers with batchnormalization and relu activation
 # additional max pooling layer in the beginning
 
-# TODO:  * padding? in original paper the input gets downsampled --> no padding
-#       * relu inplace?
+
 class double_conv_pool(nn.Module):
     def __init__(self, in_channels, out_channels, bn, drop_rate=0):
         super(double_conv_pool,self).__init__()

@@ -28,12 +28,13 @@ def main(argv):
     drop_rate=0
     lab=s.lab
     classification=False
-    temp=1
+    temp=.4
     try:
         opts, args = getopt.getopt(argv,"w:p:b:m:ld:ct:i:o:",["weight-path=", "datapath=",'model=','lab','drop-rate=','input=','output='])
     except getopt.GetoptError as error:
         print(error)
-        #print( 'test.py -i <Boolean> -s <Boolean>')
+        print( 'test.py -w <path to weights file> -p <path to folder of images> OR -i <path to single image> -l <no argument. use if lab should be used>\
+            -d <amount of dropout used in model> -c <no argument. Use if model is classifier> -t <temperature for annealed mean> -o <output path for images>')
         sys.exit(2)
     print("opts", opts)
     for opt, arg in opts:

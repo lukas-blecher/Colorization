@@ -5,8 +5,7 @@ import torch.optim as optim
 import os
 import numpy as np
 from itertools import count
-import sys, getopt
-#from models.stlclassifier import Classifier
+import sys, getopt 
 from settings import s
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
@@ -16,12 +15,17 @@ from functions import load_trainset
 from skimage import color
 from torchvision.models import alexnet
 
+'''
+This code was used to train the 2-layered classifier that takes the alexnet output and returns STL-10 class labels.
+'''
+
+
 def main(argv):
     # setting argument defaults
     mbsize = s.batch_size
     report_freq=s.report_freq
     weight_path=s.weights_path
-    weights_name='Metric'
+    weights_name='alexNorm'
     lr=.0005
     save_freq = s.save_freq
     epochs = s.epochs
@@ -29,7 +33,9 @@ def main(argv):
     infinite_loop=s.infinite_loop
     data_path = s.data_path
     load_list=s.load_list
-    help='test.py -b <int> -p <string> -r <int> -w <string>'
+    help='test.py -b <batch size> -e <amount of epochs to train. standard: infinite> -r <report frequency> -w <path to weights folder> \
+            -n <name> -s <save freq.> -l <learning rate> -p <path to data set> -d <dropout rate> --beta1 <beta1 for adam>\
+            --beta2 <beta2 for adam>'
     try:
         opts, args = getopt.getopt(argv,"he:b:r:w:l:s:n:p:i:",
             ['epochs=',"mbsize=","report-freq=",'weight-path=', 'lr=','save-freq=','weight-name=','data_path='
@@ -44,8 +50,6 @@ def main(argv):
             sys.exit()
         elif opt in ("-b", "--mbsize"):
             mbsize = int(arg)
-        #elif opt in ("-p", "--data-path"):
-        #    data_path = arg
         elif opt in ("-e", "--epochs"):
             epochs = int(arg)
             infinite_loop=False
@@ -73,7 +77,7 @@ def main(argv):
     #out_shape=(s.classes,32,32)
     betas=(beta1,beta2)
     weight_path_ending=os.path.join(weight_path,weights_name+'.pt')
-
+    #trainset with data augmentation
     trainset = datasets.STL10(data_path,split='test',transform=transforms.Compose([
                                                                   transforms.RandomHorizontalFlip(),
                                                                   transforms.ColorJitter(hue=.025, saturation=.15),
@@ -83,7 +87,11 @@ def main(argv):
                                                                   ]))
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=mbsize, shuffle=True, num_workers=0)
     alex=alexnet()
-    alex.load_state_dict(torch.load('weights/alexnet.pth'))
+    try:
+        alex.load_state_dict(torch.load(os.path.join(weight_path,'alexnet.pth')))
+    except FileNotFoundError:
+        print('Please provide alexnet weights in',os.path.join(weight_path,'alexnet.pth'))
+        sys.exit()
     alex.to(device)
     alex.eval()
     print("NETWORK PATH:", weight_path_ending)
@@ -115,9 +123,7 @@ def main(argv):
 
             X=X.to(device)
             c=c.to(device)
-            #----------------------------------------------------------------------------------------
-            ################################### Model optimization ##################################
-            #----------------------------------------------------------------------------------------
+           
             #clear gradients
             optimizer.zero_grad()
             with torch.no_grad():

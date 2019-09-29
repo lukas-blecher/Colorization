@@ -28,16 +28,19 @@ def main(argv):
     weights_name=s.weights_name
     lr=s.learning_rate
     save_freq = s.save_freq
-    mode=1
+    mode=3
     image_loss_weight=s.image_loss_weight
     epochs = s.epochs
     beta1,beta2=s.betas
     infinite_loop=s.infinite_loop
     data_path = s.data_path
-    drop_rate = s.drop_rate
+    drop_rate = 0
     lab = s.lab
     load_list = s.load_list
-    help='test.py -b <int> -p <string> -r <int> -w <string>'
+    help='test.py -b <batch size> -e <amount of epochs to train. standard: infinite> -r <report frequency> -w <path to weights folder> \
+            -n <name> -s <save freq.> -l <learning rate> -p <path to data set> -d <dropout rate> -m <mode: differnet models> --beta1 <beta1 for adam>\
+            --beta2 <beta2 for adam> --lab <No argument. If used lab colorspace is cused> --weighted <No argument. If used *NO* class weights are used> \
+            --lambda <hyperparameter for class weights>'
     try:
         opts, args = getopt.getopt(argv,"he:b:r:w:l:s:n:m:p:d:i:",
             ['epochs=',"mbsize=","report-freq=",'weight-path=', 'lr=','save-freq=','weight-name=','mode=','data_path=','drop_rate='
@@ -95,7 +98,7 @@ def main(argv):
 
     device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     dataset=None
-    if data_path == './cifar-10':
+    if 'cifar' in data_path:
         in_size = 32
         dataset = 0
     elif 'places' in data_path:
@@ -106,7 +109,6 @@ def main(argv):
         dataset = 2
     in_shape=(3,in_size,in_size)
 
-    #out_shape=(s.classes,32,32)
     betas=(beta1,beta2)
     weight_path_ending=os.path.join(weight_path,weights_name+'.pth')
 
@@ -139,7 +141,7 @@ def main(argv):
             print("Loaded network weights from", weight_path)
         except FileNotFoundError:
             print("Initialize new weights for the generator.")
-            #sys.exit(2)
+
     except RuntimeError:
         #if the wrong mode was chosen: try the other one
         UNet=model(col_channels=classes) if mode==1 else unet(classes=classes)
@@ -151,7 +153,7 @@ def main(argv):
             mode = (mode +1) %2
         except FileNotFoundError:
             print("Initialize new weights for the generator.")
-            #sys.exit(2)    
+   
     UNet.to(device)
 
     #save the hyperparameters to a JSON-file for better oranization
@@ -230,9 +232,9 @@ def main(argv):
             #differentiate between the two available color spaces RGB and Lab
             if lab:
                 if dataset == 0: #cifar 10
-                    image=np.transpose(image,(0,3,2,1))
-                    image=np.transpose(color.rgb2lab(image),(0,3,2,1))
-                    image=torch.from_numpy((image+np.array([0,128,128])[None,:,None,None])/np.array([100,255,255])[None,:,None,None]).float()
+                    image=np.transpose(image,(0,2,3,1))
+                    image=np.transpose(color.rgb2lab(image),(0,3,1,2))
+                    image=torch.from_numpy((image+np.array([-50,0,0])[None,:,None,None])).float()
                 X=torch.unsqueeze(image[:,0,:,:],1).to(device) #set X to the Lightness of the image
                 image=image[:,1:,:,:].to(device) #image is a and b channel
             else:

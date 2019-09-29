@@ -31,7 +31,7 @@ def main(argv):
     weights_name=s.weights_name
     lr=s.learning_rate
     save_freq = s.save_freq
-    mode=1
+    mode=3
     image_loss_weight=s.image_loss_weight
     epochs = s.epochs
     beta1,beta2=s.betas
@@ -40,9 +40,12 @@ def main(argv):
     drop_rate = 0
     lab = True
     weighted_loss=True
-    weight_lambda=None
+    weight_lambda=.25
     load_list=s.load_list
-    help='test.py -b <int> -p <string> -r <int> -w <string>'
+    help='test.py -b <batch size> -e <amount of epochs to train. standard: infinite> -r <report frequency> -w <path to weights folder> \
+            -n <name> -s <save freq.> -l <learning rate> -p <path to data set> -d <dropout rate> -m <mode: differnet models> --beta1 <beta1 for adam>\
+            --beta2 <beta2 for adam> --lab <No argument. If used lab colorspace is cused> --weighted <No argument. If used *NO* class weights are used> \
+            --lambda <hyperparameter for class weights>'
     try:
         opts, args = getopt.getopt(argv,"he:b:r:w:l:s:n:p:d:i:m:",
             ['epochs=',"mbsize=","report-freq=",'weight-path=', 'lr=','save-freq=','weight-name=','data_path=','drop_rate='
@@ -56,9 +59,7 @@ def main(argv):
             print(help)
             sys.exit()
         elif opt in ("-b", "--mbsize"):
-            mbsize = int(arg)
-        #elif opt in ("-p", "--data-path"):
-        #    data_path = arg
+            mbsize = int(arg) 
         elif opt in ("-e", "--epochs"):
             epochs = int(arg)
             infinite_loop=False
@@ -91,8 +92,6 @@ def main(argv):
             beta2 = float(arg)
         elif opt=='--lab':
             lab=True
-        elif opt in ('-i','--image-loss-weight'):
-            image_loss_weight=float(arg)
         elif opt =='--weighted':
             weighted_loss= not weighted_loss
         elif opt =='--load-list':
@@ -200,17 +199,12 @@ def main(argv):
                 class_weight_path = 'resources/class-weights-lab150-stl.pt'
                 weights = torch.load(class_weight_path)
             
-        print('Class-weights loaded from ' + class_weight_path)
-    #criterion = nn.CrossEntropyLoss(weight=weights).to(device) if weighted_loss else nn.CrossEntropyLoss().to(device)
-    criterion = softCossEntropyLoss(weights=weights,device=device) if weighted_loss else softCossEntropyLoss(weights=None,device=device)
-    #additional gan loss: l1 loss
-    #l1loss = nn.L1Loss().to(device)
-    loss_hist=[]
-    #soft_onehot = torch.load('resources/onehot.pt',map_location=device)
+        print('Class-weights loaded from ' + class_weight_path) 
+    criterion = softCossEntropyLoss(weights=weights,device=device) if weighted_loss else softCossEntropyLoss(weights=None,device=device) 
+    loss_hist=[] 
     soft_onehot = torch.load('resources/smooth_onehot150.pt',map_location=device)
     
-    classifier.train()
-    #crit.train()
+    classifier.train() 
     # run over epochs
     for e in (range(prev_epochs, prev_epochs + epochs) if not infinite_loop else count(prev_epochs)):
         g_running=0
@@ -240,18 +234,11 @@ def main(argv):
             model_out=classifier(X).double()
             #create bin coded verion of ab ground truth
             binab=ab2bins(image.transpose(1,3).transpose(1,2))
-            if mode==0:
-                #print(binab.shape)
-                binab=F.interpolate(binab.float(),scale_factor=(.25,.25)).long()
-                #binab=zoom(binab.cpu(),(1,.25,.25),order=0)
-                #binab=torch.from_numpy(binab).long().to(device)
-            binab=torch.squeeze(binab,1)#.long()
-            #lookup table for soft encoded one hot vectors
-            #print('ground truth',np.bincount(binab.detach().cpu().numpy().flatten()))
-            #print('output',np.bincount(model_out.detach().cpu().numpy().argmax(1).flatten()))
+            if mode==0: 
+                binab=F.interpolate(binab.float(),scale_factor=(.25,.25)).long() 
+            binab=torch.squeeze(binab,1) 
             binab=soft_onehot[:,binab].transpose(0,1).double()
-            #calculate loss 
-            #print(model_out.shape,binab.shape)
+            #calculate loss  
             loss=criterion(model_out,binab).mean(0)
             
             loss.backward()
