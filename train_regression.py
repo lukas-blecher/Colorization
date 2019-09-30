@@ -5,12 +5,10 @@ import os
 import numpy as np
 from itertools import count
 import sys, getopt
-from models.discriminator import critic
 from models.model import model
 from models.unet import unet
-from models.endecoder import generator
-from models.middle_unet import middle_unet
 from models.color_unet import color_unet
+from models.endecoder import generator
 from settings import s
 import time
 import torchvision.transforms as transforms
@@ -29,7 +27,6 @@ def main(argv):
     lr=s.learning_rate
     save_freq = s.save_freq
     mode=3
-    image_loss_weight=s.image_loss_weight
     epochs = s.epochs
     beta1,beta2=s.betas
     infinite_loop=s.infinite_loop
@@ -37,9 +34,9 @@ def main(argv):
     drop_rate = 0
     lab = s.lab
     load_list = s.load_list
-    help='train_gan.py -b <batch size> -e <amount of epochs to train. standard: infinite> -r <report frequency> -w <path to weights folder> \
+    help='train_regression.py -b <batch size> -e <amount of epochs to train. standard: infinite> -r <report frequency> -w <path to weights folder> \
             -n <name> -s <save freq.> -l <learning rate> -p <path to data set> -d <dropout rate> -m <mode: differnet models> --beta1 <beta1 for adam>\
-            --beta2 <beta2 for adam> --lab <No argument. If used lab colorspace is used> --weighted <No argument. If used *NO* class weights are used> \
+            --beta2 <beta2 for adam> --lab <No argument. If used lab colorspace is used> \
             --lambda <hyperparameter for class weights>'
     try:
         opts, args = getopt.getopt(argv,"he:b:r:w:l:s:n:m:p:d:i:",
@@ -55,8 +52,6 @@ def main(argv):
             sys.exit()
         elif opt in ("-b", "--mbsize"):
             mbsize = int(arg)
-        #elif opt in ("-p", "--data-path"):
-        #    data_path = arg
         elif opt in ("-e", "--epochs"):
             epochs = int(arg)
             infinite_loop=False
@@ -77,10 +72,8 @@ def main(argv):
                 mode = 1
             elif arg in ('ende','2'):
                 mode = 2
-            elif arg in ('mu','3','middle'):
+            elif arg in ('color','3','cu'):
                 mode = 3
-            elif arg in ('cu','4','middle'):
-                mode = 4
         elif opt in ("-p", "--data_path"):
             data_path = str(arg)
         elif opt in ("-d", "--drop_rate"):
@@ -91,8 +84,6 @@ def main(argv):
             beta2 = float(arg)
         elif opt=='--lab':
             lab=True
-        elif opt in ('-i','--image-loss-weight'):
-            image_loss_weight=float(arg)
         elif opt in ('--load-list'):
             load_list=True
 
@@ -109,6 +100,7 @@ def main(argv):
         dataset = 2
     in_shape=(3,in_size,in_size)
 
+    #out_shape=(s.classes,32,32)
     betas=(beta1,beta2)
     weight_path_ending=os.path.join(weight_path,weights_name+'.pth')
 
@@ -123,37 +115,23 @@ def main(argv):
     classes=2 if lab else 3
     #define model
     UNet=None
+    
+    if mode ==0:
+        UNet=model(col_channels=classes) 
+    elif mode ==1:
+        UNet=unet(drop_rate=drop_rate,classes=classes)
+    elif mode ==2:
+        UNet=generator(drop_rate,classes)
+    elif mode ==3:
+        UNet=color_unet(True,drop_rate,classes)
+    #load weights
     try:
-        if mode ==0:
-            UNet=model(col_channels=classes) 
-        elif mode ==1:
-            UNet=unet(drop_rate=drop_rate,classes=classes)
-        elif mode ==2:
-            UNet=generator(drop_rate,classes)
-        elif mode ==3:
-            UNet=middle_unet(drop_rate=drop_rate,classes=classes)
-        elif mode ==4:
-            UNet=color_unet(drop_rate=drop_rate,classes=classes)
-        
-        #load weights
-        try:
-            UNet.load_state_dict(torch.load(weight_path_ending))
-            print("Loaded network weights from", weight_path)
-        except FileNotFoundError:
-            print("Initialize new weights for the generator.")
-
-    except RuntimeError:
-        #if the wrong mode was chosen: try the other one
-        UNet=model(col_channels=classes) if mode==1 else unet(classes=classes)
-        #load weights
-        try:
-            UNet.load_state_dict(torch.load(weight_path_ending))
-            print("Loaded network weights from", weight_path)
-            #change mode to the correct one
-            mode = (mode +1) %2
-        except FileNotFoundError:
-            print("Initialize new weights for the generator.")
+        UNet.load_state_dict(torch.load(weight_path_ending,map_location=device))
+        print("Loaded network weights from", weight_path)
+    except FileNotFoundError:
+        print("Initialize new weights for the generator.")
    
+
     UNet.to(device)
 
     #save the hyperparameters to a JSON-file for better oranization
@@ -176,8 +154,7 @@ def main(argv):
             "lr": lr,
             "lab":lab,
             "betas": betas,
-            "image_loss_weight": image_loss_weight,
-            "model":['custom','unet','encoder-decoder','middle-unet','color-unet'][mode]
+            "model":['custom','unet','encoder-decoder','color-unet'][mode]
         }
     else:
         #load specified parameters from model_dict
@@ -186,48 +163,30 @@ def main(argv):
         betas=params['betas']
         lr=params['lr']
         lab=params['lab']
-        image_loss_weight=params['image_loss_weight']
         loss_path_ending=params['loss_name']
         #memorize how many epochs already were trained if we continue training
         prev_epochs=params['epochs']+1
 
-    
-    #define critic 
-    crit=critic(in_size,classes=classes).to(device)
-    #load discriminator weights
-    crit_path=os.path.join(weight_path,weights_name+'_crit.pth')
-    try:
-        crit.load_state_dict(torch.load(crit_path))
-        print('Loaded weights for discriminator from %s'%crit_path)
-    except FileNotFoundError:
-        print('Initialize new weights for discriminator')
-        crit.apply(weights_init_normal)
     #optimizer
     optimizer_g=optim.Adam(UNet.parameters(),lr=lr,betas=betas)
-    optimizer_c=optim.Adam(crit.parameters(),lr=lr,betas=betas)
-    criterion = nn.BCELoss().to(device)
-    #additional gan loss: l1 loss
+    # l1 loss
     l1loss = nn.L1Loss().to(device)
     loss_hist=[]
 
     
 
     UNet.train()
-    crit.train()
     gray = torch.tensor([0.2989 ,0.5870, 0.1140 ])[:,None,None].float()
-    ones = torch.ones(mbsize,device=device)
-    zeros= torch.zeros(mbsize,device=device)
     # run over epochs
     for e in (range(prev_epochs, prev_epochs + epochs) if not infinite_loop else count(prev_epochs)):
-        g_running,c_running=0,0
+        g_running=0
         #load batches          
         for i,batch in enumerate(trainloader):
             if dataset == 0: #cifar 10
                 (image,_) = batch
-            elif dataset in (1,2): #places
+            elif dataset in (1,2): #places and stl 10
                 image = batch
                 
-            batch_size=image.shape[0]
             X=None
             #differentiate between the two available color spaces RGB and Lab
             if lab:
@@ -254,46 +213,27 @@ def main(argv):
                 unet_col=UNet(torch.stack((X,X,X),1)[:,:,0,:,:])
             else:
                 unet_col=UNet(X)
-            #calculate loss as a function of how good the unet can fool the critic
-            fooling_loss=criterion(crit(unet_col)[:,0], ones[:batch_size])
             #calculate how close the generated pictures are to the ground truth
-            image_loss=l1loss(unet_col,image)
-            #combine both losses and weight them
-            loss_g=fooling_loss+image_loss_weight*image_loss
+            loss_g=l1loss(unet_col,image)
             #backpropagation
             loss_g.backward()
             optimizer_g.step()
 
-            #----------------------------------------------------------------------------------------
-            ################################## Critic optimization ##################################
-            #----------------------------------------------------------------------------------------
-            optimizer_c.zero_grad()
-            real_loss=criterion(crit(image)[:,0],ones[:batch_size])
-            #requires no gradient in unet col
-            fake_loss=criterion(crit(unet_col.detach())[:,0],zeros[:batch_size])
-            loss_c=.5*(real_loss+fake_loss)
-            loss_c.backward()
-            optimizer_c.step()
-
             g_running+=loss_g.item()
-            c_running+=loss_c.item()
-            loss_hist.append([e,i,loss_g.item(),loss_c.item()])
+            loss_hist.append([e,i,loss_g.item()])
 
             #report running loss
             if (i+len(trainloader)*e)%report_freq==report_freq-1:
-                print('Epoch %i, batch %i: \tunet loss=%.2e, \tcritic loss=%.2e'%(e+1,i+1,g_running/report_freq,c_running/report_freq))
+                print('Epoch %i, batch %i: \tunet loss=%.2e'%(e+1,i+1,g_running/report_freq))
                 g_running=0
-                c_running=0
 
             if s.save_weights and (i+len(trainloader)*e)%save_freq==save_freq-1:
                 #save parameters
                 try:
                     torch.save(UNet.state_dict(),weight_path_ending)
-                    torch.save(crit.state_dict(),crit_path)
                 except FileNotFoundError:
                     os.makedirs(weight_path)
                     torch.save(UNet.state_dict(),weight_path_ending)
-                    torch.save(crit.state_dict(),crit_path)
                 print("Parameters saved")
 
                 if s.save_loss:

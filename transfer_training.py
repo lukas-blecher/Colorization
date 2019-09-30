@@ -73,8 +73,8 @@ def main(argv):
             load_list=not load_list
         
     device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    in_size = 96
-    #out_shape=(s.classes,32,32)
+
+
     betas=(beta1,beta2)
     weight_path_ending=os.path.join(weight_path,weights_name+'.pt')
     #trainset with data augmentation
@@ -103,7 +103,7 @@ def main(argv):
         print("Loaded network weights from", weight_path)
     except FileNotFoundError:
         print("Initialize new weights for the generator.")
-        #sys.exit(2)
+
     
     classifier.to(device)
     #optimizer
@@ -113,8 +113,7 @@ def main(argv):
 
     loss_hist=[]
     
-    classifier.train()
-    #crit.train()
+    classifier.train() 
     # run over epochs
     for e in (range(epochs) if not infinite_loop else count(epochs)):
         g_running=0
@@ -148,12 +147,10 @@ def main(argv):
             if s.save_weights and (i+len(trainloader)*e)%save_freq==save_freq-1:
                 #save parameters
                 try:
-                    torch.save(classifier.state_dict(),weight_path_ending)
-                    #torch.save(crit.state_dict(),crit_path)
+                    torch.save(classifier.state_dict(),weight_path_ending) 
                 except FileNotFoundError:
                     os.makedirs(weight_path)
-                    torch.save(classifier.state_dict(),weight_path_ending)
-                    #torch.save(crit.state_dict(),crit_path)
+                    torch.save(classifier.state_dict(),weight_path_ending) 
                 print("Parameters saved")
 
 

@@ -42,7 +42,7 @@ def main(argv):
     weighted_loss=True
     weight_lambda=.25
     load_list=s.load_list
-    help='test.py -b <batch size> -e <amount of epochs to train. standard: infinite> -r <report frequency> -w <path to weights folder> \
+    help='train_classification.py -b <batch size> -e <amount of epochs to train. standard: infinite> -r <report frequency> -w <path to weights folder> \
             -n <name> -s <save freq.> -l <learning rate> -p <path to data set> -d <dropout rate> -m <mode: differnet models> --beta1 <beta1 for adam>\
             --beta2 <beta2 for adam> --lab <No argument. If used lab colorspace is cused> --weighted <No argument. If used *NO* class weights are used> \
             --lambda <hyperparameter for class weights>'

@@ -15,6 +15,11 @@ from models.color_unet import color_unet
 from models.unet import unet
 from models.middle_unet import middle_unet
 
+'''
+This function is used to evaluate a model based on the classification accuracy of a pretrained alexnet using
+the colorizer output as image input.
+'''
+
 def main(argv):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -29,15 +34,18 @@ def main(argv):
     mbsize = 16
     col_space = None
     class_net = False
-    mode = None
+    mode = 2
     drop_rate = 0
-    T = 1
+    T = .4
     classes = 3
     stl_path = './stl-10'
+    help='metric.py -b <batch size> -w <model weight file> -p <2layer classifer weight file> -s <colorspace "rgb" or "lab"> \
+        -c <use if model is classification model> -m <mode> -d <dropout rate> -t <define temperature> --stl <path to stl dataset>
     try:
         opts, args = getopt.getopt(argv,"b:w:p:cm:d:t:s:",
             ["mbsize=",'weight-path=','classifier-path=','c_space=','mode=','drop_rate=','temperature=','stl='])
     except getopt.GetoptError:
+        print(help)
         sys.exit(2)
     print("opts" ,opts)
     for opt, arg in opts:
@@ -87,6 +95,7 @@ def main(argv):
     classifier.load_state_dict(torch.load(classifier_path, map_location=device))
     classifier.eval()
 
+    #we trained on the test set and evaluate on the train set since the test set has more labeled images than the trainset
     testset = datasets.STL10(stl_path,split='train',transform=transforms.Compose([transforms.ToTensor()]))
     testloader = torch.utils.data.DataLoader(testset, batch_size=mbsize, shuffle=True, num_workers=0)
 
