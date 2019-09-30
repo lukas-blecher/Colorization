@@ -1,9 +1,7 @@
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
-#from unet.dataset import gta_dataset, city_dataset
 from settings import s
-#from unet.unet import unet
 from skimage.color import lab2rgb
 from skimage import exposure
 
@@ -32,19 +30,11 @@ def show_colorization(pred,truth=None,original=None,lab=False,cl=False,zoom=Fals
                 if truth is not None: 
                     tn=truth[i].detach().cpu().numpy()                
                 if cl:
-                    #print(np.bincount(pn.argmax(0).flatten().astype(int))[91])
-                    #pn=bins2ab(pn.argmax(0))#.transpose((2,0,1))
                     pn=ab_from_distr(pn[None,...],T)
-                    #print(pn.shape)
                     if zoom:
-                        #print(pn.shape)
-                        #pn=np.fliplr(np.rot90(pn,-1))
                         pn=scale(pn,(1,4,4,1))
                     
-                #print(truth[i].detach().cpu().numpy().min(),truth[i].detach().cpu().numpy().max())
-                #print(pn.shape,gray.shape)
                 
-
                 if cl:
                     lab_pred=np.concatenate((50+gray.transpose((1,2,0)),pn[0]),2)
                 else:
@@ -52,9 +42,6 @@ def show_colorization(pred,truth=None,original=None,lab=False,cl=False,zoom=Fals
                     
                 if truth is not None: 
                     lab_orig=np.concatenate((50+gray,tn))
-                #for arr in (lab_orig[0,...],lab_orig[1,...],truth[i].detach().cpu().numpy()[0,...],truth[i].detach().cpu().numpy()[1,...],
-                #            lab_pred[0,...],lab_pred[1,...],pred[i].detach().cpu().numpy()[0,...],pred[i].detach().cpu().numpy()[1,...]):
-                #    print(arr.min(),arr.max())
                 plt.subplot(N,M,counter[i,0])
                 if i==0:
                     plt.title('Input image ($L$-channel)')
@@ -93,7 +80,6 @@ def show_colorization(pred,truth=None,original=None,lab=False,cl=False,zoom=Fals
                 plt.imshow(pred[i].detach().cpu().numpy())
                 plt.axis('off')
             elif original is None:
-                #print(truth.shape,pred.shape)
                 plt.subplot(N,2,counter[i,0])
                 if i==0:
                     plt.title('colorization')
@@ -105,7 +91,6 @@ def show_colorization(pred,truth=None,original=None,lab=False,cl=False,zoom=Fals
                 plt.axis('off')
                 plt.imshow(np.transpose(truth[i].detach().cpu().numpy(),(1,2,0)))
             else:
-                #print(N,truth.shape,pred.shape,original.shape)
                 plt.subplot(N,3,counter[i,0])
                 if i==0:
                     plt.title('Input image')
