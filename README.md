@@ -15,8 +15,8 @@ To train a model execute a line like the following but replace `train.py` with t
 
  ## Results
  
- ![classification results](https://github.com/lukas-blecher/Colorization/blob/lab150/figures/classification_good.png?raw=true)
- ![gan_results](https://github.com/lukas-blecher/Colorization/blob/lab150/figures/good-gan-images.png?raw=true)
+ ![classification results](https://github.com/lukas-blecher/Colorization/blob/master/figures/classification_good.png?raw=true)
+ ![gan_results](https://github.com/lukas-blecher/Colorization/blob/master/figures/good-gan-images.png?raw=true)
  
  
  Here are some results where the colorization was successful. 
