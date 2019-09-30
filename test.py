@@ -6,6 +6,7 @@ from models.model import model
 from models.endecoder import generator
 from models.richzhang import richzhang
 from models.color_unet import color_unet
+from models.middle_unet import middle_unet
 from torchvision import transforms
 from settings import s
 import torchvision.datasets as datasets
@@ -25,12 +26,13 @@ def main(argv):
     drop_rate=0
     lab=s.lab
     classification=False
-    temp=1#.38
+    temp=.4
     try:
         opts, args = getopt.getopt(argv,"h:w:p:b:m:ld:ct:",["help", "weight-path=", "datapath=",'model=','lab','drop-rate='])
     except getopt.GetoptError as error:
         print(error)
-        print( 'test.py -i <Boolean> -s <Boolean>')
+        print( 'test.py -w <path to weights file> -p <path to dataset> -l <no argument. use if lab should be used> -m <mode: different models>\
+            -d <amount of dropout used in model> -c <no argument. Use if model is classifier> -t <temperature for annealed mean> -o <output path for images>')
         sys.exit(2)
     print("opts", opts)
     for opt, arg in opts:
@@ -54,6 +56,8 @@ def main(argv):
                 mode = 3
             elif arg in ('colorunet','cu','4'):
                 mode = 4
+            elif arg in ('mu','5','middle'):
+                mode = 5
         elif opt in ('-l','--lab'):
             lab=True
         elif opt in ("-d", "--drop-rate"):
@@ -61,7 +65,7 @@ def main(argv):
         elif opt =='-c':
             classification=True
             lab=True
-        elif opt=='t':
+        elif opt=='-t':
             temp=float(arg)
         
     device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -71,7 +75,7 @@ def main(argv):
         in_size = 32
         dataset = 0
     elif 'places' in data_path:
-        in_size = 256
+        in_size = 224
         dataset = 1
     elif 'stl' in data_path:
         in_size = 96
@@ -83,7 +87,7 @@ def main(argv):
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=3,
                                         shuffle=True, num_workers=2 if dataset in (0,1) else 0)
     print("Loaded dataset from", data_path)
-    classes=(274 if classification else 2) if lab else 3
+    classes=(150 if classification else 2) if lab else 3
 
     #define model
     UNet=None
@@ -99,6 +103,8 @@ def main(argv):
         zoom=True
     elif mode == 4:
         UNet=color_unet(True,drop_rate,classes)
+    elif mode == 5:
+        UNet = middle_unet(True,drop_rate,classes)
     #load weights
     try:
         UNet.load_state_dict(torch.load(weight_path, map_location=device))

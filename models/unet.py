@@ -24,7 +24,10 @@ class unet(nn.Module):
         self.expanse4 = up_conv(128, bn, drop_rate)
         #out convolution
         self.out_conv = nn.Conv2d(64,classes,1)
-        self.output = nn.Softmax(1) if classes>3 else nn.Sigmoid()
+        if not classes == 2:
+            self.output = nn.Softmax(1) if classes>3 else nn.Sigmoid()
+        else:
+            self.output = nn.Tanh()
         # initializing weights:
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -56,15 +59,17 @@ class unet(nn.Module):
         x = self.expanse3(x2,x)
         x = self.expanse4(x1,x)
         x = self.out_conv(x)
-        return self.output(x) #torch.sigmoid(x)
+        if not self.classes == 2:
+            return self.output(x)
+        else:
+            return 110*self.output(x) #torch.sigmoid(x)
 
 
 # contraction: building block of the left side of a unet
 # two 3x3 convolutional layers with batchnormalization and relu activation
 # additional max pooling layer in the beginning
 
-# TODO:  * padding? in original paper the input gets downsampled --> no padding
-#       * relu inplace?
+
 class double_conv_pool(nn.Module):
     def __init__(self, in_channels, out_channels, bn, drop_rate=0):
         super(double_conv_pool,self).__init__()

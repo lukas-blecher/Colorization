@@ -1,9 +1,7 @@
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
-#from unet.dataset import gta_dataset, city_dataset
 from settings import s
-#from unet.unet import unet
 from skimage.color import lab2rgb
 from skimage import exposure
 
@@ -16,73 +14,72 @@ def lr(img):
     img=np.clip(img,0,1)
     return img
 
-def show_colorization(pred,truth=None,original=None,lab=False,cl=False,zoom=False,T=1):
+def show_colorization(pred,truth=None,original=None,lab=False,cl=False,zoom=False,T=1,return_img=False):
     N = 1
     if len(pred.shape)==4:
          N = pred.shape[0]
     M = 1+(1 if not truth is None else 0)+(1 if not original is None else 0)+(2 if lab else 0)
     plt.figure(figsize=(5, N*5/M))
     counter=np.arange(1,1+N*M).reshape(N,M)
+    img_list=[]
     if lab:
         for i in range(N):
-            if truth is not None and original is not None:
+            if original is not None:
                 gray=original[i].detach().cpu().numpy()
                 pn=pred[i].detach().cpu().numpy()
-                tn=truth[i].detach().cpu().numpy()                
+                if truth is not None: 
+                    tn=truth[i].detach().cpu().numpy()                
                 if cl:
-                    #print(np.count_nonzero(np.bincount(pn.argmax(0).flatten().astype(int))))
-                    #pn=bins2yuv(pn.argmax(0)).transpose((2,0,1))
                     pn=ab_from_distr(pn[None,...],T)
-                    #print(pn.shape)
                     if zoom:
-                        #print(pn.shape)
-                        #pn=np.fliplr(np.rot90(pn,-1))
                         pn=scale(pn,(1,4,4,1))
                     
-                #print(truth[i].detach().cpu().numpy().min(),truth[i].detach().cpu().numpy().max())
-                #print(pn.shape,gray.shape)
-                lab_pred=np.concatenate((50+gray.transpose((1,2,0)),pn[0]),2)
-                lab_orig=np.concatenate((50+gray,tn))
-                #for arr in (lab_orig[0,...],lab_orig[1,...],truth[i].detach().cpu().numpy()[0,...],truth[i].detach().cpu().numpy()[1,...],
-                #            lab_pred[0,...],lab_pred[1,...],pred[i].detach().cpu().numpy()[0,...],pred[i].detach().cpu().numpy()[1,...]):
-                #    print(arr.min(),arr.max())
+                
+                if cl:
+                    lab_pred=np.concatenate((50+gray.transpose((1,2,0)),pn[0]),2)
+                else:
+                    lab_pred=np.concatenate((50+gray,pn)).transpose(1,2,0)
+                    
+                if truth is not None: 
+                    lab_orig=np.concatenate((50+gray,tn))
                 plt.subplot(N,M,counter[i,0])
                 if i==0:
                     plt.title('Input image ($L$-channel)')
                 plt.axis('off')
                 plt.imshow(gray[0],cmap='gray')
                 plt.subplot(N,M,counter[i,1])
-                if i==0:
-                    plt.title('Ground truth')
-                plt.axis('off')
-                plt.imshow(lr(np.transpose(lab_orig,(1,2,0))))
-                plt.subplot(N,M,counter[i,3])
+                if truth is not None: 
+                    if i==0:
+                        plt.title('Ground truth')
+                    plt.axis('off')
+                    plt.imshow(lr(np.transpose(lab_orig,(1,2,0))))
+                    plt.subplot(N,M,counter[i,3])
                 if i==0:
                     plt.title('Colorization')
                 plt.imshow(lr(lab_pred))
                 plt.axis('off')
                 plt.subplot(N,M,counter[i,2])
+                if truth is not None: 
+                    if i==0:
+                        plt.title('Ground truth $ab$-channels')
+                    plt.axis('off')
+                    plt.imshow(exposure.adjust_gamma(lr(np.transpose(np.concatenate((100*np.ones(gray.shape),tn)),(1,2,0))),3,.9))
+                    plt.subplot(N,M,counter[i,4])
                 if i==0:
-                    plt.title('Ground truth $uv$-channels')
+                    plt.title('Colorization $ab$-channels')
+                if cl:
+                    plt.imshow(exposure.adjust_gamma(lr(np.concatenate((np.ones(gray.T.shape),pn[0]),2)),3,.9))
+                else:
+                    plt.imshow(exposure.adjust_gamma(lr(np.concatenate((np.ones(gray.shape),pn)).transpose(1,2,0)),3,.9))                
                 plt.axis('off')
-                #tn=bins2yuv(yuv2bins(tn.transpose((1,2,0)))).transpose((2,0,1))
-                #if cl:
-                    #tn=bins2yuv(yuv2bins(tn.transpose((1,2,0))),np.ones(gray.shape).T)
-                    #plt.imshow(exposure.adjust_gamma(lr(tn),3,.9))
-                plt.imshow(exposure.adjust_gamma(lr(np.transpose(np.concatenate((100*np.ones(gray.shape),tn)),(1,2,0))),3,.9))
-                plt.subplot(N,M,counter[i,4])
-                if i==0:
-                    plt.title('Colorization $uv$-channels')
-                plt.imshow(exposure.adjust_gamma(lr(np.concatenate((100*np.ones(gray.T.shape),pn[0]),2)),3,.9))
-                plt.axis('off')
-
+                if return_img:
+                    img_list.append(lr(lab_pred))
     else:
         for i in range(N):
             if truth is None and original is None:
                 plt.imshow(pred[i].detach().cpu().numpy())
                 plt.axis('off')
             elif original is None:
-                #print(truth.shape,pred.shape)
                 plt.subplot(N,2,counter[i,0])
                 if i==0:
                     plt.title('colorization')
@@ -94,7 +91,6 @@ def show_colorization(pred,truth=None,original=None,lab=False,cl=False,zoom=Fals
                 plt.axis('off')
                 plt.imshow(np.transpose(truth[i].detach().cpu().numpy(),(1,2,0)))
             else:
-                #print(N,truth.shape,pred.shape,original.shape)
                 plt.subplot(N,3,counter[i,0])
                 if i==0:
                     plt.title('Input image')
@@ -110,4 +106,9 @@ def show_colorization(pred,truth=None,original=None,lab=False,cl=False,zoom=Fals
                     plt.title('colorization')
                 plt.imshow(np.transpose(pred[i].detach().cpu().numpy(),(1,2,0)))
                 plt.axis('off')
-    plt.show()
+            if return_img:
+                img_list.append(np.transpose(pred[i].detach().cpu().numpy(),(1,2,0)))
+    if return_img:
+        return img_list
+    else:
+        plt.show()
