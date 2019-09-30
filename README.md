@@ -20,4 +20,6 @@ To train a model execute a line like the following but replace `train.py` with t
  
  
  Here are some results where the colorization was successful. 
- Left: Classification, right: GAN
+ Left: Classification, right: GAN  
+ The order is from left to right: Grayscale input image, ground truth image, colorized version  
+ The images were taken from the [STL-10](https://cs.stanford.edu/~acoates/stl10/) testset.
